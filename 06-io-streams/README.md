@@ -1,3 +1,4 @@
+# Условие на задачата 
 # Java StyleChecker
 
 Ще създадем инструмент за статично анализиране (*static code analysis tool*) на Java код - **StyleChecker**, който да ни помага да се придържаме към определен стандарт за писане на код (например [Google Java Style Guide](https://google.github.io/styleguide/javaguide.html)).
