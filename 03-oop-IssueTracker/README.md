@@ -1,214 +1,120 @@
-# Обектно-ориентирано програмиране с Java (част II)
+# Issue Tracker
 
-### Interfaces
+### Условие
 
-Когато имаме 2 интерфейса с един и същ default-ен метод, то в имплементационния клас трябва задължително да предоставим имплементация на въпросния метод. Може да дадем нова имплементация, или да извикаме конкретна default-на имплементация от даден интерфейс, използвайки синтаксиса `{Interface}.super.{method}` (например `Likeable.super.saySomething()`).
+Ще създадем система за проследяване на грешки (bug tracking), проблеми (issue tracking) и управление на разработката на софтуерни проекти, подобна на [JIRA](https://www.atlassian.com/software/jira).
 
+Issue Tracker-ът трябва да имплементира следния интерфейс:
 
 ```java
-public interface Likeable {
-	public default void saySomething() {
-		System.out.println("I like you");
-	}
+public interface IssueTracker {
+
+	public Issue[] findAll(Component component, IssueStatus status);
+
+	public Issue[] findAll(Component component, IssuePriority priority);
+
+	public Issue[] findAll(Component component, IssueType type);
+
+	public Issue[] findAll(Component component, IssueResolution resolution);
+
+	public Issue[] findAllIssuesCreatedBetween(LocalDateTime startTime, LocalDateTime endTime);
+
+	public Issue[] findAllBefore(LocalDateTime dueTime);
 }
 ```
 
+Класът, който го имплементира, трябва да има следния конструктор:
+
 ```java
-public interface Lovable {
-	public default void saySomething() {
-		System.out.println("I love you");
-	}
+public Jira(Issue[] issues);
+```
+*Issue* класът трябва да имплементира следния интерфейс:
+
+```java
+public interface IIssue {
+
+	public void resolve(IssueResolution resolution);
+
+	public void setStatus(IssueStatus status);
+
+	public String getId();
+	
+	public LocalDateTime getCreatedAt();
+	
+	public LocalDateTime getLastModifiedAt();
 }
 ```
 
-```java
-public class Person implements Lovable, Likeable {
-
-	@Override
-	public void saySomething() {
-		Likeable.super.saySomething();
-	}
-}
-```
-
-### Wrapper classes
-
-В Java всеки примитивен тип си има свой Wrapper Class: int -> Integer, char -> Character ....
-Wrapper класовете се използват за да конвертират всеки примитив в Обект. Както всеки клас в Java,
-така и Wrapper класовете наследяват неявно `java.lang.Object` класа. В практиката често се използват
-при колекциите, защото те приемат само обекти (повече за това на следващата лекция).
-Java компилаторът може автоматично да конвертира от примитив в инстанция на Wrappеr Class (autoboxing) и обратно (autounboxing). Поради тази възможнот, Java ни позволява да правим неща като: `Integer number = 5;`
-
-| Примитивен тип | Wrapper клас | Пример за използване |
-| -------------- |:------------:| :-------------------:|
-| boolean        | Boolean      | new Boolean(true)    |
-| byte           | Byte         | new Byte((byte) 1)   |
-| short          | Short        | new Short((short) 1) |
-| int            | Integer      | new Integer(1)       |
-| long           | Long         | new Long(1)          |
-| float          | Float        | new Float(1.0)       |
-| double         | Double       | new Double(1.0)      |
-| char           | Character    | new Character('a')   |
-| void           | Void         | -                    |
+и декларацията на конструктора му да изглежда така:
 
 ```java
-public class Main {
-	public static void main(String[] args) {
-		Integer firstNum = 1;
-		Integer secondNum = 1;
-		
-		System.out.println(firstNum.compareTo(secondNum)); // 0
-		System.out.println(firstNum.equals(secondNum));    // true
-		System.out.println(firstNum == secondNum);         // true
-	}
-}
+public Issue(IssuePriority priority, Component component, User reporter, String description) throws InvalidReporterException; 
 ```
 
-### Йерархия на Wrapper класовете
+* подаденият reporter трябва да се валидира
+* останалите 3 аргумента трябва да се валидират и ако са невалидни, да се хвърлят подходящ тип изключения.
 
-![hierarchy](http://tinyimg.io/i/a6BPbvk.png)
+...и да има поне следните полета:
+  * уникално ID = трябва да се образува от краткото име на компонентата + уникално число, което при всяко създаване на Issue се увеличава с 1 (например, FMI-666)
+  * приоритет, който може да бъде TRIVIAL, MINOR, MAJOR, CRITICAL.
+  * resolution(как issue-то е било resolve-нато), който може да бъде FIXED, WONT_FIX, DUPLICATE, CANNOT_REPRODUCE, UNRESOLVED. При създаване, статусът е UNRESOLVED по подразбиране.
+  * статус на issue-то, който може да бъде OPEN, IN_PROGRESS, RESOLVED, REOPENED. При създаване, статусът е OPEN по подразбиране.
+  * тип на issue-то, който може да бъде TASK, BUG, NEW_FEATURE, кaтo TASK и NEW_FEATURE са Issue-та, които имат и допълнително поле за време, до което трябва да бъдат изпълнени (dueTime).
+  * компонента, на която принадлежи issue-то.
+  * кога е създадено във времето.
+  * кога е променяно за последно във времето.
 
-### Enums
-
-Enum-ите в Java дефинират крайни изброими множества. В Java всеки Enum е наследник на `java.lang.Enum`, който от своя страна ни предоставя методи като values() и valueOf() наготово. Java Enum-ите също като всеки друг клас могат да си имат член данни и конструктор (може да бъде само package-private или private). Важно е да отбележим, че първото в дефиницията (тялото) на всеки Enum трябва да е списъкът от инстанциите му.
+Класът `Component` трябва да е със следния конструктор:
 
 ```java
-public enum VirtualMachineSize {
-
-	X_SMALL(1, 2048),
-	SMALL(2, 4096),
-	MEDIUM(4, 8192), 
-	LARGE(8, 16384),
-	X_LARGE(16, 32768);
-
-	private final int cpu;
-	private final int memory;
-
-	VirtualMachineSize(int cpu, int memory) {
-		this.cpu = cpu;
-		this.memory = memory;
-	}
-
-	public int getCpu() {
-		return cpu;
-	}
-
-	public int getMemory() {
-		return memory;
-	}
-}
+public Component(String name, String shortName, User creator);
 ```
+  
+Класът `User` трябва да е със следния конструктор:
 
 ```java
-public class Main {
-	public static void main(String[] args) {
-		VirtualMachineSize.LARGE.getCpu(); // 8
-		VirtualMachineSize.values()[0]; // X_SMALL
-		VirtualMachineSize.values()[2]; // MEDIUM
-		VirtualMachineSize size = VirtualMachineSize.valueOf("SMALL");
-		size.getCpu(); // 2
-	}
-}
+public User(String userName);
 ```
-
-### Static
-
-Ключовата дума `static` в Java може да се използва при декларацията на член-данни и методи. Static член-данните/методите се асоциират със самия клас, а не с неговите инстанции (много различни окръжности можем да начертаем, но всички ползват едно и също PI, т.е PI не се обвързва с конкретна инстанция, а със самия клас `Circle`). Static метод може да реферира само static член-данни и да вика само static методи.
-
-Къде се пазят всички static член-данни?
-
-Не са нито в stack-a, нито в heap-a.
-
-Преди Java 8 се пазят в специална област на паметта, т.нар. PermGen. След Java 8 се пазят в друга специална област, т.нар. Metaspace. Може да намерите повече информация [тук](https://dzone.com/articles/java-8-permgen-metaspace).
-
-```java
-public class HealthPotion implements Treasure {
-	private static final String HEALTH_POTION_FOUND_MESSAGE = "Health potion found! %d health points added to your hero!";
-	private static final String HERO_IS_NOT_ALIVE_MESSAGE = "Hero is not alive";
-
-	// omitted
-
-	public String collect(Hero hero) {
-		if (hero.isAlive()) {
-			hero.takeHealing(heal());
-			return String.format(HEALTH_POTION_FOUND_MESSAGE, heal());
-		} else {
-			return HERO_IS_NOT_ALIVE_MESSAGE;
-		}
-	}
-}
+-------------------------------------
+* *Requirement* В задачата са позволени само масиви и НЕ трябва да се ползват колекции и Map–ове.
+* *Requirement* За да качите успешно задачата си в Grader-a, тя трябва да има следната структура:
 ```
-
-### Exceptions
-
-Всеки Exception в Java е наследник на класа `Throwable`. Съществуват 2 групи изключения:
-
-1) Exceptions
-  - Checked Exceptions (Compile-time Exceptions) - компилаторът ни задължава да ги обработим или прехвърлим нагоре по веригата (например `java.io.IOException`).
-  - Unchecked Exceptions (Runtime Exceptions) - невидими за компилатора и доста често подсказват, че в кода ни има бъг (например `java.lang.IndexOutOfBoundsException`). Не е добра практика runtime exception-ите да бъдат прихващани. Хубаво е да си debug-нем кода и да си отстраним бъговете.
-2) Errors - при тях нищо не може да се направи и програмата ни се терминира (например `java.lang.OutOfMemoryError`).
-
-При прихващането на няколко различни Exception-и в един try-catch е задължително `catch` блокoвете да са подредени от по-конкретния към по-общия (в смисъл на йерархията на наследяване).
-При наличието на `finally` блок, без значение от развоя на събитията, кодът в него \*винаги се изпълнява след try-catch секцията.
-
-```java
-public class CustomException extends Exception {
-
-	public CustomException(String message) {
-		super(message);
-	}
-}
+src
+╷
+└─ bg/sofia/uni/fmi/jira/
+   └─ Component.java
+   └─ User.java
+   └─ Jira.java
+   └─(...)
+   └─ issues/
+      └─ Issue.java
+      └─(...)
+      └─ exceptions/
+         └─(...)
+   └─ interfaces/
+     └─ IIssue.java
+     ├─ IssueTracker.java
+     └─ (...)
+   └─ enums/
+      └─ (...)
 ```
+* *Hint* Задачата има за цел да ви стимулира да пишете обектно-ориентиран код на Java като прилагате принципите на ООП, както и да упражните добро структуриране на кода в пакети.
+* *Hint* За местата, на които смятате, че ви трябва тип време, използвайте [java.time API](https://docs.oracle.com/javase/8/docs/api/java/time/LocalDateTime.html) и обърнете по-специално внимание на `LocalDateTime` класа и неговите методи.
 
-```java
-public void iWillHandleTheException() {
-	try {
-		iDoNotKnowWhatToDoWithThisException();
-	} catch (CustomException e) {
-		System.out.println(e.getMessage());
-		System.out.println("The exception finally is gone");
-	}
-}
+Успех, и не се срамувайте да задавате въпроси!
 
-public void iDoNotKnowWhatToDoWithThisException() throws CustomException {
-	throwException();
-}
+Hints after the exercise, за да ви минат успешно тестовете
+------------------------
 
-public void throwException() throws CustomException {
-	throw new CustomException("Bad Exception");
-}
-```
+* Трябва да създадете класове за отделните типове `Issue`-та, тоест трябва да имате:
+	- `bg.sofia.uni.fmi.jira.issues.Bug.java;`
+	- `bg.sofia.uni.fmi.jira.issues.NewFeature.java;`
+	- `bg.sofia.uni.fmi.jira.issues.Task.java;`
+	
+* Всяко `Issue` трябва да има методи със следната сигнатура (добавени са и в интефейса `IIssue` по-горе вече): 
+	- `public LocalDateTime getCreatedAt();` 
+	- `public LocalDateTime getLastModifiedAt();` 
+	
+* Конструкторите на NewFeature и Task трябва да приемат като последен параметър 'LocalDateTime dueTime'.
 
-```java
-public static int getNumber() {	
-	try {
-		throw new Exception();
-		//return 1;  -> Unreachable
-	} catch (Exception e) {
-		return 2;
-	} finally {
-		return 3;
-	}
-}
-
-public static void main(String[] args) {
-	getNumber(); // 3
-}
-```
-
-```java
-public static void terminate() {
-	try {
-		throw new Exception();
-	} catch (Exception e) {
-		System.out.println("I am in a catch block");
-		System.exit(0);
-	} finally {
-		System.out.println("I am in a finally block");
-	}
-}
-
-public static void main(String[] args) {
-	terminate(); // "I am in a catch block"
-}
-```
+* Конструкторите на Issue, Bug, NewFeature и Task не трябва да хвърлят друг checked exception, освен InvalidReporterException.	
