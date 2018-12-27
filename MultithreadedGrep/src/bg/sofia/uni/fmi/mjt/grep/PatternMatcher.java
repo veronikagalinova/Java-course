@@ -11,15 +11,22 @@ import java.util.regex.Pattern;
 
 
 public class PatternMatcher implements Callable<String> {
-
 	private File file;
 	private String stringToFind;
+	private boolean isCaseSensitivityEnabled = false;
+	private boolean isWholeWordsOptionsEnabled = false;
+	private File pathToOutputFile;
 
-	public PatternMatcher(File file, String stringToFind) {
+	public PatternMatcher(File file, String stringToFind, boolean isCaseSensitivityEnabled,
+			boolean isWholeWordsOptionsEnabled, File pathToOutputFile) {
 		super();
 		this.file = file;
 		this.stringToFind = stringToFind;
+		this.isCaseSensitivityEnabled = isCaseSensitivityEnabled;
+		this.isWholeWordsOptionsEnabled = isWholeWordsOptionsEnabled;
+		this.pathToOutputFile = pathToOutputFile;
 		System.out.println("+++++++++++++" + stringToFind);
+
 	}
 
 	@Override

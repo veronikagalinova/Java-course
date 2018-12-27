@@ -12,6 +12,7 @@ public class GrepController {
 	private File pathToDirectoryThree;
 	private boolean isCaseSensitivityEnabled = false;
 	private boolean isWholeWordsOptionsEnabled = false;
+	private File pathToOutputFile;
 	private static int NUMBER_OF_PARALLEL_THREADS;
 
 	private List<Future<String>> result = new ArrayList<>();
@@ -20,16 +21,18 @@ public class GrepController {
 
 	public GrepController(String command) {
 		parseCommand(command);
-
+		executorService = Executors.newFixedThreadPool(NUMBER_OF_PARALLEL_THREADS);
 	}
 
 	public void evaluate(String command) {
 		// parseCommand(command);
-		executorService = Executors.newFixedThreadPool(NUMBER_OF_PARALLEL_THREADS);
 		for (File file : pathToDirectoryThree.listFiles()) {
 			if (file.isFile()) {
-				result.add(executorService.submit(new PatternMatcher(file, command.split(" ")[1])));
-//				result.add(executorService.submit(new PatternMatcher(file, stringToFind)));
+				// result.add(executorService.submit(new PatternMatcher(file, command.split("
+				// ")[1])));
+				result.add(executorService
+						.submit(new PatternMatcher(file, stringToFind, isCaseSensitivityEnabled,
+								isWholeWordsOptionsEnabled, pathToDirectoryThree)));
 
 			}
 		}
@@ -47,22 +50,43 @@ public class GrepController {
 
 	private void parseCommand(String command) {
 		String[] tokens = command.split(" ");
-		String options = null;
-		String stringToFind = tokens[1];
-		System.out.println("+++string to find " + stringToFind);
-		pathToDirectoryThree = new File(tokens[2]);
-		System.out.println("+++path to directory three " + pathToDirectoryThree.getAbsolutePath());
-		NUMBER_OF_PARALLEL_THREADS = Integer.parseInt(tokens[3]);
 
-		// validate !!!
-		// if (tokens.length < 4) {
-		// throw new IllegalArgumentException("Usage: "
-		// + "grep *[-w|-i] [string_to_find] [path_to_directory_tree]
-		// [number_of_parallel_threads] *[path_to_output_file]");
-		// }
-		//
-		// if (!tokens[0].equals("grep")) {
-		// throw new IllegalArgumentException("Invalid command " + tokens[0] + "!");
-		// }
+		if (tokens.length < 4) {
+			throw new IllegalArgumentException("Usage: "
+					+ "grep *[-w|-i] [string_to_find] [path_to_directory_tree] [number_of_parallel_threads] *[path_to_output_file]");
+		}
+
+		if (command.contains("-w") && command.contains("-i")) {
+			isWholeWordsOptionsEnabled = true;
+			isCaseSensitivityEnabled = true;
+			stringToFind = tokens[3];
+			pathToDirectoryThree = new File(tokens[4]);
+			NUMBER_OF_PARALLEL_THREADS = Integer.parseInt(tokens[5]);
+			if (tokens.length == 7) {
+				pathToOutputFile = new File(tokens[6]);
+			}
+		} else if (command.contains("-w")) {
+			isWholeWordsOptionsEnabled = true;
+			stringToFind = tokens[2];
+			pathToDirectoryThree = new File(tokens[3]);
+			NUMBER_OF_PARALLEL_THREADS = Integer.parseInt(tokens[4]);
+			if (tokens.length == 6) {
+				pathToOutputFile = new File(tokens[5]);
+			}
+		} else if (command.contentEquals("-i")) {
+			isCaseSensitivityEnabled = true;
+			stringToFind = tokens[2];
+		} else {
+			stringToFind = tokens[1];
+			pathToDirectoryThree = new File(tokens[2]);
+			NUMBER_OF_PARALLEL_THREADS = Integer.parseInt(tokens[3]);
+			if (tokens.length == 5) {
+				pathToOutputFile = new File(tokens[4]);
+			}
+		}
+
+		System.out.println("+++string to find " + stringToFind);
+		System.out.println("+++path to directory three " + pathToDirectoryThree.getAbsolutePath());
 	}
+
 }
