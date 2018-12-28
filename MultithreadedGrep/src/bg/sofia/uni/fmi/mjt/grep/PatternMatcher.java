@@ -15,18 +15,13 @@ public class PatternMatcher implements Callable<String> {
 	private String stringToFind;
 	private boolean isCaseSensitivityEnabled = false;
 	private boolean isWholeWordsOptionsEnabled = false;
-	private File pathToOutputFile;
 
 	public PatternMatcher(File file, String stringToFind, boolean isCaseSensitivityEnabled,
-			boolean isWholeWordsOptionsEnabled, File pathToOutputFile) {
-		super();
+			boolean isWholeWordsOptionsEnabled) {
 		this.file = file;
 		this.stringToFind = stringToFind;
 		this.isCaseSensitivityEnabled = isCaseSensitivityEnabled;
 		this.isWholeWordsOptionsEnabled = isWholeWordsOptionsEnabled;
-		this.pathToOutputFile = pathToOutputFile;
-		System.out.println("+++++++++++++" + stringToFind);
-
 	}
 
 	@Override
@@ -38,7 +33,15 @@ public class PatternMatcher implements Callable<String> {
 			int index = 0;
 			while ((line = br.readLine()) != null) {
 				index++;
+
+				if (isWholeWordsOptionsEnabled) {
+					stringToFind = "\\b" + stringToFind + "\\b";
+				}
 				Pattern pattern = Pattern.compile(stringToFind);
+				if (isCaseSensitivityEnabled) {
+					pattern = Pattern.compile(stringToFind, Pattern.CASE_INSENSITIVE);
+				}
+
 				Matcher matcher = pattern.matcher(line);
 				if (matcher.find()) {
 					sBuilder.append(file.getAbsolutePath()).append(":" + index + ":").append(line)

@@ -12,7 +12,7 @@ public class GrepController {
 	private File pathToDirectoryThree;
 	private boolean isCaseSensitivityEnabled = false;
 	private boolean isWholeWordsOptionsEnabled = false;
-	private File pathToOutputFile;
+	private String pathToOutputFile;
 	private static int NUMBER_OF_PARALLEL_THREADS;
 
 	private List<Future<String>> result = new ArrayList<>();
@@ -25,30 +25,30 @@ public class GrepController {
 	}
 
 	public void evaluate(String command) {
-		// parseCommand(command);
+		// TO DO - SEARCH RECURSIVE
 		for (File file : pathToDirectoryThree.listFiles()) {
 			if (file.isFile()) {
-				// result.add(executorService.submit(new PatternMatcher(file, command.split("
-				// ")[1])));
 				result.add(executorService
 						.submit(new PatternMatcher(file, stringToFind, isCaseSensitivityEnabled,
-								isWholeWordsOptionsEnabled, pathToDirectoryThree)));
+								isWholeWordsOptionsEnabled)));
 
 			}
 		}
 
 		for (Future<String> fs : result) {
 			try {
-				System.out.println(fs.get());
-			} catch (InterruptedException | ExecutionException e) {
+				String line = fs.get();
+				System.out.println(line);
+			} catch (InterruptedException e) {
 				e.printStackTrace();
-			} finally {
-				executorService.shutdown();
+			} catch (ExecutionException e) {
+				e.printStackTrace();
 			}
 		}
 	}
 
 	private void parseCommand(String command) {
+		command = command.replaceAll("\\s{2,}", " ").trim();
 		String[] tokens = command.split(" ");
 
 		if (tokens.length < 4) {
@@ -57,36 +57,56 @@ public class GrepController {
 		}
 
 		if (command.contains("-w") && command.contains("-i")) {
-			isWholeWordsOptionsEnabled = true;
-			isCaseSensitivityEnabled = true;
-			stringToFind = tokens[3];
-			pathToDirectoryThree = new File(tokens[4]);
-			NUMBER_OF_PARALLEL_THREADS = Integer.parseInt(tokens[5]);
-			if (tokens.length == 7) {
-				pathToOutputFile = new File(tokens[6]);
-			}
-		} else if (command.contains("-w")) {
-			isWholeWordsOptionsEnabled = true;
-			stringToFind = tokens[2];
-			pathToDirectoryThree = new File(tokens[3]);
-			NUMBER_OF_PARALLEL_THREADS = Integer.parseInt(tokens[4]);
-			if (tokens.length == 6) {
-				pathToOutputFile = new File(tokens[5]);
-			}
-		} else if (command.contentEquals("-i")) {
-			isCaseSensitivityEnabled = true;
-			stringToFind = tokens[2];
+			parseCommandWithBothOptions(tokens);
+		} else if (command.contains("-w") || command.contains("-i")) {
+			parseCommandWithSingleOption(tokens);
 		} else {
-			stringToFind = tokens[1];
-			pathToDirectoryThree = new File(tokens[2]);
-			NUMBER_OF_PARALLEL_THREADS = Integer.parseInt(tokens[3]);
-			if (tokens.length == 5) {
-				pathToOutputFile = new File(tokens[4]);
-			}
+			parseCommandWithoutOptions(tokens);
 		}
 
 		System.out.println("+++string to find " + stringToFind);
 		System.out.println("+++path to directory three " + pathToDirectoryThree.getAbsolutePath());
+		System.out.println("+++path to output file " + pathToOutputFile);
+
+	}
+
+	private void parseCommandWithBothOptions(String[] tokens) {
+		isWholeWordsOptionsEnabled = true;
+		isCaseSensitivityEnabled = true;
+
+		final int indexOfSearchedString = 3;
+		final int indexOfPath = 4;
+
+		stringToFind = tokens[indexOfSearchedString];
+		pathToDirectoryThree = new File(tokens[indexOfPath]);
+		final int indexOfThreads = 5;
+		NUMBER_OF_PARALLEL_THREADS = Integer.parseInt(tokens[indexOfThreads]);
+		if (tokens.length == 7) {
+			pathToOutputFile = tokens[6];
+		}
+	}
+
+	private void parseCommandWithSingleOption(String[] tokens) {
+		if (tokens[1].equals("-w")) {
+			isWholeWordsOptionsEnabled = true;
+		} else {
+			isCaseSensitivityEnabled = true;
+		}
+		stringToFind = tokens[2];
+		pathToDirectoryThree = new File(tokens[3]);
+		NUMBER_OF_PARALLEL_THREADS = Integer.parseInt(tokens[4]);
+		if (tokens.length == 6) {
+			pathToOutputFile = tokens[5];
+		}
+	}
+
+	private void parseCommandWithoutOptions(String[] tokens) {
+		stringToFind = tokens[1];
+		pathToDirectoryThree = new File(tokens[2]);
+		NUMBER_OF_PARALLEL_THREADS = Integer.parseInt(tokens[3]);
+		if (tokens.length == 5) {
+			pathToOutputFile = tokens[4];
+		}
 	}
 
 }
