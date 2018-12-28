@@ -1,6 +1,9 @@
 package bg.sofia.uni.fmi.mjt.grep;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -9,7 +12,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 public class GrepController {
-	private File pathToDirectoryThree;
+	private String pathToDirectoryThree;
 	private boolean isCaseSensitivityEnabled = false;
 	private boolean isWholeWordsOptionsEnabled = false;
 	private String pathToOutputFile;
@@ -21,28 +24,33 @@ public class GrepController {
 
 	public GrepController(String command) {
 		parseCommand(command);
-		executorService = Executors.newFixedThreadPool(NUMBER_OF_PARALLEL_THREADS);
 	}
 
 	public void evaluate(String command) {
-		// TO DO - SEARCH RECURSIVE
-		for (File file : pathToDirectoryThree.listFiles()) {
-			if (file.isFile()) {
-				result.add(executorService
-						.submit(new PatternMatcher(file, stringToFind, isCaseSensitivityEnabled,
-								isWholeWordsOptionsEnabled)));
-
-			}
+		executorService = Executors.newFixedThreadPool(NUMBER_OF_PARALLEL_THREADS);
+		try {
+			Files.walk(Paths.get(pathToDirectoryThree)).filter(Files::isRegularFile)
+					.forEach(f -> {
+						File file = f.toFile();
+						result.add(executorService.submit(new PatternMatcher(file, stringToFind,
+								isCaseSensitivityEnabled, isWholeWordsOptionsEnabled)));
+					});
+		} catch (IOException e1) {
+			System.err.println(
+					"Error occured while searching file system in GrepController::evaluate");
+			e1.printStackTrace();
 		}
 
 		for (Future<String> fs : result) {
 			try {
 				String line = fs.get();
-				System.out.println(line);
+				System.out.print(line);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			} catch (ExecutionException e) {
 				e.printStackTrace();
+			} finally {
+				executorService.shutdown();
 			}
 		}
 	}
@@ -65,7 +73,7 @@ public class GrepController {
 		}
 
 		System.out.println("+++string to find " + stringToFind);
-		System.out.println("+++path to directory three " + pathToDirectoryThree.getAbsolutePath());
+		System.out.println("+++path to directory three " + pathToDirectoryThree);
 		System.out.println("+++path to output file " + pathToOutputFile);
 
 	}
@@ -78,7 +86,7 @@ public class GrepController {
 		final int indexOfPath = 4;
 
 		stringToFind = tokens[indexOfSearchedString];
-		pathToDirectoryThree = new File(tokens[indexOfPath]);
+		pathToDirectoryThree = tokens[indexOfPath];
 		final int indexOfThreads = 5;
 		NUMBER_OF_PARALLEL_THREADS = Integer.parseInt(tokens[indexOfThreads]);
 		if (tokens.length == 7) {
@@ -93,7 +101,7 @@ public class GrepController {
 			isCaseSensitivityEnabled = true;
 		}
 		stringToFind = tokens[2];
-		pathToDirectoryThree = new File(tokens[3]);
+		pathToDirectoryThree = tokens[3];
 		NUMBER_OF_PARALLEL_THREADS = Integer.parseInt(tokens[4]);
 		if (tokens.length == 6) {
 			pathToOutputFile = tokens[5];
@@ -102,7 +110,7 @@ public class GrepController {
 
 	private void parseCommandWithoutOptions(String[] tokens) {
 		stringToFind = tokens[1];
-		pathToDirectoryThree = new File(tokens[2]);
+		pathToDirectoryThree = tokens[2];
 		NUMBER_OF_PARALLEL_THREADS = Integer.parseInt(tokens[3]);
 		if (tokens.length == 5) {
 			pathToOutputFile = tokens[4];
