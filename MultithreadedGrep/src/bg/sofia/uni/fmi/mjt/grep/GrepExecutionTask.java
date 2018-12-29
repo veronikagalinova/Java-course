@@ -10,13 +10,13 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 
-public class PatternMatcher implements Callable<String> {
+public class GrepExecutionTask implements Callable<String> {
 	private File file;
 	private String stringToFind;
 	private boolean isCaseSensitivityEnabled = false;
 	private boolean isWholeWordsOptionsEnabled = false;
 
-	public PatternMatcher(File file, String stringToFind, boolean isCaseSensitivityEnabled,
+	public GrepExecutionTask(File file, String stringToFind, boolean isCaseSensitivityEnabled,
 			boolean isWholeWordsOptionsEnabled) {
 		this.file = file;
 		this.stringToFind = stringToFind;

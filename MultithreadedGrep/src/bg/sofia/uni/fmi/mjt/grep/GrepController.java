@@ -1,6 +1,7 @@
 package bg.sofia.uni.fmi.mjt.grep;
 
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -18,7 +19,8 @@ public class GrepController {
 	private String pathToOutputFile;
 	private static int NUMBER_OF_PARALLEL_THREADS;
 
-	private List<Future<String>> result = new ArrayList<>();
+	private List<Future<String>> executionResult = new ArrayList<>();
+	private List<String> finalResult = new ArrayList<>();
 	private String stringToFind;
 	private ExecutorService executorService;
 
@@ -32,26 +34,42 @@ public class GrepController {
 			Files.walk(Paths.get(pathToDirectoryThree)).filter(Files::isRegularFile)
 					.forEach(f -> {
 						File file = f.toFile();
-						result.add(executorService.submit(new PatternMatcher(file, stringToFind,
+						executionResult.add(
+								executorService.submit(new GrepExecutionTask(file, stringToFind,
 								isCaseSensitivityEnabled, isWholeWordsOptionsEnabled)));
 					});
 		} catch (IOException e1) {
 			System.err.println(
-					"Error occured while searching file system in GrepController::evaluate");
+					"Error occured while searching file system!");
 			e1.printStackTrace();
 		}
 
-		for (Future<String> fs : result) {
+		for (Future<String> fs : executionResult) {
 			try {
 				String line = fs.get();
-				System.out.print(line);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			} catch (ExecutionException e) {
+				finalResult.add(line);
+			} catch (InterruptedException | ExecutionException e) {
 				e.printStackTrace();
 			} finally {
 				executorService.shutdown();
 			}
+		}
+		
+		if (pathToOutputFile != null) {
+			saveResultToOutputFile(finalResult);
+		} else {
+			finalResult.forEach(line -> System.out.print(line));
+		}
+	}
+
+	private void saveResultToOutputFile(List<String> finalResult) {
+		try (FileWriter fWriter = new FileWriter(pathToOutputFile)) {
+			// BufferedWriter bWriter = new BufferedWriter(fWriter)
+			for (String line : finalResult) {
+				fWriter.write(line);
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 	}
 
@@ -71,11 +89,6 @@ public class GrepController {
 		} else {
 			parseCommandWithoutOptions(tokens);
 		}
-
-		System.out.println("+++string to find " + stringToFind);
-		System.out.println("+++path to directory three " + pathToDirectoryThree);
-		System.out.println("+++path to output file " + pathToOutputFile);
-
 	}
 
 	private void parseCommandWithBothOptions(String[] tokens) {
