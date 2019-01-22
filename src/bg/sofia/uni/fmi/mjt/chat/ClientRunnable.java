@@ -15,24 +15,29 @@ public class ClientRunnable implements Runnable {
 
 	@Override
 	public void run() {
-			try {
-				BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-				while (true) {
-					String serverResponse = reader.readLine();
-					if ("disconnected".equals(serverResponse)) {
-						System.out.println("disconnected from server on localhost:8080");
-						try {
-							socket.close();
-						} catch (IOException e) {
-							System.out.println("----Error occured while closing client socket!");
-						}
-						return;
-					}
-					System.out.println(serverResponse);
+		try {
+			BufferedReader reader = new BufferedReader(
+					new InputStreamReader(socket.getInputStream()));
+			while (true) {
+				String serverResponse = reader.readLine();
+				if ("disconnected".equals(serverResponse)) {
+					closeConnection();
+					return;
 				}
-			} catch (IOException e) {
-				System.out.println(e.getMessage() + " exception in ClientRunnable +++++++++");
+				System.out.println(serverResponse.trim());
 			}
+		} catch (IOException e) {
+			System.out.println(e.getMessage() + " exception in ClientRunnable +++++++++");
+		}
+	}
+	
+	private void closeConnection() {
+		System.out.println("disconnected from server on localhost:4444");
+		try {
+			socket.close();
+		} catch (IOException e) {
+			System.out.println("Error occured while closing client socket!");
+		}
 	}
 
 }
